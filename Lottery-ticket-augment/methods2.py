@@ -77,6 +77,29 @@ class Bottleneck(nn.Module):
         
 
         
+    def forward(self, x):
+        identity = x.clone()
+        x = self.relu(self.batch_norm1(self.conv1(x)))
+        
+        x = self.relu(self.batch_norm2(self.conv2(x)))
+        
+        x = self.conv3(x)
+        x = self.batch_norm3(x)
+        
+        #downsample if needed
+        if self.i_downsample is not None:
+            identity = self.i_downsample(identity)
+        #add identity
+        x+=identity
+        x=self.relu(x)
+        
+        return x
+        
+    
+
+        
+
+        
 class ResNet(nn.Module):
     def __init__(self, ResBlock, layer_list, num_classes, num_channels=3):
         super(ResNet, self).__init__()
