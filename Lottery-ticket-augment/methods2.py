@@ -181,6 +181,7 @@ def sparsity_print(model):
   print('Total Number of Weights:', total)
   print('Sparsity with growth:', zero/total)
 
+# Why do you habe test_loader here?
 def train(model,train_loader,test_loader,num_epochs,optimizer):
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
   cost = nn.CrossEntropyLoss()
