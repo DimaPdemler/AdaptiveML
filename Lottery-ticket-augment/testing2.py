@@ -18,7 +18,7 @@ train_loader, test_loader = get_data('MNIST', augment = True, validation=False)
 
 #     print(scores)
 # def find_ticket(model, name, location, train_loader, test_loader, start_iter = 0, end_iter = 30, num_epochs = 90, learning_rate = .001, prune_amount = .2, k = 1):
-  
+#  def __init__(self, ResBlock, layer_list, num_classes, num_channels=3):
 model2= ResNet50(num_classes = 10,channels = 1).to(device)
 find_ticket( model2,'ResNet-50-MNIST-nam', train_loader, test_loader, num_epochs = 10, end_iter=6)
   
