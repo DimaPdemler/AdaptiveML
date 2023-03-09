@@ -104,7 +104,7 @@ class ResNet(nn.Module):
     def __init__(self, ResBlock, layer_list, num_classes, num_channels=3):
         super(ResNet, self).__init__()
         self.in_channels = 64 *5//4
-        
+        # Delete the maksing stuff and instead initialize the mask with all 1s
         self.conv1 = nn.Conv2d(num_channels, 64*5//4, kernel_size=7, stride=2, padding=3, bias=False)
         mask = torch.ones(np.shape(self.conv1.weight))
         mask[:(np.shape(mask)[0]//5),:,:] = 0 #Prune output channel's new growth
