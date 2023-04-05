@@ -70,6 +70,7 @@ class Bottleneck(nn.Module):
 
         for module, name in self.parameters_to_prune:
           mask = torch.ones(np.shape(module.weight))
+          # Should I remove the "//5"?
           mask[:,:(np.shape(mask)[1]//5),:] = 0 #Prune input channel
           mask[:(np.shape(mask)[0]//5),:,:] = 0 #Prune output channel
           prune.custom_from_mask(module, name, mask)
@@ -103,24 +104,24 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, ResBlock, layer_list, num_classes, num_channels=3):
         super(ResNet, self).__init__()
-        self.in_channels = 64 *5//4
+        self.in_channels = 64
         # Delete the maksing stuff and instead initialize the mask with all 1s
-        self.conv1 = nn.Conv2d(num_channels, 64*5//4, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         mask = torch.ones(np.shape(self.conv1.weight))
-        mask[:(np.shape(mask)[0]//5),:,:] = 0 #Prune output channel's new growth
+        # mask[:(np.shape(mask)[0]//5),:,:] = 0 #Prune output channel's new growth
         prune.custom_from_mask(self.conv1, 'weight', mask)
 
-        self.batch_norm1 = nn.BatchNorm2d(64*5//4)
+        self.batch_norm1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(kernel_size = 3, stride=2, padding=1)
         
-        self.layer1 = self._make_layer(ResBlock, layer_list[0], planes=64*5//4)
-        self.layer2 = self._make_layer(ResBlock, layer_list[1], planes=128*5//4, stride=2)
-        self.layer3 = self._make_layer(ResBlock, layer_list[2], planes=256*5//4, stride=2)
-        self.layer4 = self._make_layer(ResBlock, layer_list[3], planes=512*5//4, stride=2)
+        self.layer1 = self._make_layer(ResBlock, layer_list[0], planes=64)
+        self.layer2 = self._make_layer(ResBlock, layer_list[1], planes=128, stride=2)
+        self.layer3 = self._make_layer(ResBlock, layer_list[2], planes=256, stride=2)
+        self.layer4 = self._make_layer(ResBlock, layer_list[3], planes=512, stride=2)
         
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        self.fc = nn.Linear(512*5//4*ResBlock.expansion, num_classes)
+        self.fc = nn.Linear(512*ResBlock.expansion, num_classes)
         
     def forward(self, x):
         x = self.relu(self.batch_norm1(self.conv1(x)))
@@ -179,7 +180,7 @@ def sparsity_print(model):
     total += float(module.weight.nelement())
   print('Number of Zero Weights:', zero)
   print('Total Number of Weights:', total)
-  print('Sparsity with growth:', zero/total)
+  print('Sparsity:', zero/total)
 
 # Why do you habe test_loader here?
 def train(model,train_loader,test_loader,num_epochs,optimizer):
@@ -270,28 +271,28 @@ def find_ticket(model, name, location, train_loader, test_loader, start_iter = 0
     print('Saving iteration ', str(i+1))
     torch.save(model.state_dict(), location + name + '_iter' + str(i+1)) 
 
-def grow(model, amount, device):
-  previous_module = model.parameters_to_prune()[0][0]
+# def grow(model, amount, device):
+#   previous_module = model.parameters_to_prune()[0][0]
 
-  for i, (module, name) in enumerate(model.parameters_to_prune()[1:]):
-    mask = module.get_buffer('weight_mask').data
-    #Pick Suitable Locations
-    omega = []
-    out_channels = mask.sum(dim=(0,2,3))
-    for idx, val in enumerate(out_channels):
-      if val == 0:
-        omega.append(idx)
+#   for i, (module, name) in enumerate(model.parameters_to_prune()[1:]):
+#     mask = module.get_buffer('weight_mask').data
+#     #Pick Suitable Locations
+#     omega = []
+#     out_channels = mask.sum(dim=(0,2,3))
+#     for idx, val in enumerate(out_channels):
+#       if val == 0:
+#         omega.append(idx)
 
-    indices = np.random.choice(omega, size = min(len(omega), amount[i]), replace = False)
+#     indices = np.random.choice(omega, size = min(len(omega), amount[i]), replace = False)
     
-    #Grow at these indices
-    #print(i, module.weight.size())
-    module.get_buffer('weight_mask')[:,indices] = 1
-    prune.custom_from_mask(module,'weight', torch.ones(module.weight.size(), device = device))
+#     #Grow at these indices
+#     #print(i, module.weight.size())
+#     module.get_buffer('weight_mask')[:,indices] = 1
+#     prune.custom_from_mask(module,'weight', torch.ones(module.weight.size(), device = device))
     
-    previous_module.get_buffer('weight_mask')[indices,:] = 1
-    prune.custom_from_mask(previous_module,'weight', torch.ones(previous_module.weight.size(), device = device))  
-    previous_module = module
+#     previous_module.get_buffer('weight_mask')[indices,:] = 1
+#     prune.custom_from_mask(previous_module,'weight', torch.ones(previous_module.weight.size(), device = device))  
+#     previous_module = module
 
 def loss(model, val_loader,error_weight, structure_weight, device):
   error = 1-test(model, val_loader, device) #should be validation set, but for now we will use test set

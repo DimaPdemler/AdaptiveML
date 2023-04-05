@@ -3,7 +3,7 @@ from methods2 import *
 torch.manual_seed(0)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-location = '/pvc-dmitridemler/'
+location = '/pvc-dmitridemler/3-14-23/'
 train_loader, test_loader = get_data('MNIST', augment = True, validation=False)
 
 # scores = []
@@ -21,7 +21,7 @@ train_loader, test_loader = get_data('MNIST', augment = True, validation=False)
 #  def __init__(self, ResBlock, layer_list, num_classes, num_channels=3):
 model2= ResNet50(num_classes = 10,channels = 1).to(device)
 find_ticket( model2,'ResNet-50-MNIST-nam',location, train_loader, test_loader, num_epochs = 10, end_iter=6)
-  
+
 
 
 
